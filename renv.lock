@@ -107,6 +107,13 @@
       "Repository": "CRAN",
       "Hash": "202260e1b2c410edc086d5b8f1ed946e"
     },
+    "rticles": {
+      "Package": "rticles",
+      "Version": "0.14",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "32e9cc1a0244f9e08aef4b7b69cf0d39"
+    },
     "stringi": {
       "Package": "stringi",
       "Version": "1.4.6",
