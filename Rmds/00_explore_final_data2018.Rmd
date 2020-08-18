@@ -11,6 +11,7 @@ This is the final data file that was given to me by Emlyn, but there is no metad
 
 ```{r message=FALSE}
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 ```
 
@@ -50,9 +51,18 @@ The variables with `_density` are the ones we need to use for hmsc. They have ve
 
 *Now, check the PCNMs that Emlyn had run before. She has no code associated to how she got them, or it was outdated with deprecated functions. So, I'm exploring the data but eventually will have to run our own.*
 
+I just really don't even understand what these MEMs are supposed to look.
+
 ```{r}
 ctrl.MEMs <- readRDS(here::here("nov_2019","sig_ctrl_MEMs.RDS"))
-heatmap(as.matrix(ctrl.MEMs))
+
+ctrl.MEMs %>% 
+  pivot_longer(., cols = starts_with("MEM"), names_to = "MEM") %>% 
+  mutate(MEM = factor(MEM, levels = unique(MEM))) %>% 
+  ggplot(., aes(x = value)) +
+  geom_histogram() +
+  facet_wrap(~MEM, nrow = 2)
+
 ```
 
 
