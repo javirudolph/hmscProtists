@@ -1,5 +1,3 @@
-^renv$
-^renv\.lock$
 ^hmscProtists\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
