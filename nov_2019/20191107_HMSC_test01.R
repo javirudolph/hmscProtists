@@ -1,18 +1,18 @@
 # Test run of HMSC
 
 library(HMSC)
-library(doParallel)
+#library(doParallel)
 
 # Significant MEMs are saved as an RDS file within this directory as:
-ctrl.MEMs <- readRDS("sig_ctrl_MEMs.RDS")
+ctrl.MEMs <- readRDS("nov_2019/sig_ctrl_MEMs.RDS")
 
 
-# Read the data 
-final.data <- read.table("Resetarits&al2018FinalData.txt")
+# Read the data
+final.data <- read.table("nov_2019/Resetarits&al2018FinalData.txt")
 
 # Subset the data to:
 #   - The control of just 1 landscape
-# The X matrix = occupancy 
+# The X matrix = occupancy
 
 prot.occp <- as.matrix(round(final.data[1:36,20:25]))
 
@@ -35,7 +35,9 @@ protist_hmsc <- as.HMSCdata(Y = prot.occp, X = cbind(prot.env[,2:3], ctrl.MEMs),
 
 # Protist model
 
-protist_model <- hmsc(protist_hmsc, family = "overPoisson", niter = 10000, nburn = 2000, thin = 5)
+protist_model <- hmsc(protist_hmsc, family = "probit", niter = 50000, nburn = 10000, thin = 15)
+
+# Check convergence
 protist_model$results$estimation$paramX
 dim(protist_model$results$estimation$paramX)
 
@@ -48,17 +50,17 @@ protist_site_vp <- variPart(protist_model, groupX = c(rep("env", 3), rep("spa", 
 library(tidyverse)
 library(ggtern)
 
-protist_spp_vp %>% 
+protist_spp_vp %>%
   map(as_tibble) %>%
-  bind_cols() %>% 
-  rownames_to_column() %>% 
-  set_names(c("species", "c", "b", "a", "e", "f", "d", "g")) %>% 
+  bind_cols() %>%
+  rownames_to_column() %>%
+  set_names(c("species", "c", "b", "a", "e", "f", "d", "g")) %>%
   as.data.frame() -> output
 output
-  
-rowSums(output[,2:8])  
-  
-output %>% 
+
+rowSums(output[,2:8])
+
+output %>%
   transmute(species = species,
             env = a + f + 0.5 * d + 0.5 * g,
             env = ifelse(env < 0, 0, env),
@@ -70,7 +72,7 @@ output %>%
 plotdata
 
 # Plot
-plotdata %>% 
+plotdata %>%
   ggtern(aes(x = env, z = spa, y = codist, size = r2)) +
   geom_point(aes(color = species), alpha = 0.8) +
   scale_T_continuous(limits=c(0.0,1.0),
