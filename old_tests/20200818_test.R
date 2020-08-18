@@ -1,38 +1,18 @@
 # We are testing that HMSC works. There was a recent update, R 4.0 and it doesn't work with HMSC, so now trying to run this with previous version of R.
 
-# library(devtools)
-#
-# devtools::install_github('guiblanchet/HMSC')
-library(HMSC)
+# I keep having problems with Blanchet's HMSC
+# Switching and giving a try to the one from Otso's group
+
+library(Hmsc)
+library(corrplot)
+set.seed(1)
 
 
-# Load the data from Emlyn's work
-# Significant MEMs are saved as an RDS file within this directory as:
-ctrl.MEMs <- readRDS("old_tests/sig_ctrl_MEMs.RDS")
+# Starting with one of the communities from Emlyn\
+all_data <- read.table(file = "old_tests/Resetarits&al2018FinalData.txt")
 
-# Read the data
-final.data <- read.table("old_tests/Resetarits&al2018FinalData.txt")
+# The first 36 rows correspond to one of the control metacommunities, so all 36 patches are present.
+Y <- all_data[1:36, 20:26] # density/species matrix
+XData <- all_data[1:36, c(5,9,10)] # environmental variables
 
-# Subset the data to:
-#   - The control of just 1 landscape
-# The X matrix = occupancy
-
-prot.occp <- as.matrix(round(final.data[1:36,20:25]))
-prot.occp <- ifelse(as.matrix(round(final.data[1:36,20:25])) == 0, 0, 1)
-
-
-# The env variables
-prot.env <- final.data[1:36,c(5,9:10)]
-prot.env$sample <- as.factor(prot.env$sample)
-
-# Fit HMSC
-
-# Format into hmsc format
-protist_hmsc <- as.HMSCdata(Y = prot.occp, X = cbind(prot.env[,2:3], ctrl.MEMs), Random = prot.env$sample)
-
-protist_model <- hmsc(protist_hmsc, family = "probit",
-                      niter = 1000, nburn = 500, thin = 15)
-
-
-# Check for convergence
-
+model <- Hmsc(Y = Y, XData = XData)
