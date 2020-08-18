@@ -1,0 +1,58 @@
+---
+title: "Exploring Resetarits&al2018FinalData.txt"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is the final data file that was given to me by Emlyn, but there is no metadata associated to any of the files provided, thus trying here to have a clear picture of how they are organized and the kind of data they have.
+
+```{r message=FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r}
+resetarits_data <- read.table(here::here("nov_2019", "Resetarits&al2018FinalData.txt"))
+head(resetarits_data)
+```
+
+```{r}
+names(resetarits_data)
+```
+
+- date: when the samples were counted
+- landscape: this is the type of arrangement of habitat types in the 6 by 6 setup. Where landscapes 1,2,3, 7, and 8 are one group sharing the "common" patches. The others share the other "common"
+- meta: metacommunity. There are 5 metacommunities per landscape, one control and four removal treatments
+- type: the type of removal happening. Type E is the control (no removals), A and B are low connectivity, C and D are high connectivity removals.
+- sample: each individual "patch" within the metacommunity. With control metacommunities having 36 samples, and treatment metacommunities having 35
+- x.value/y.value: location of the sample in the 36 by 36 grid
+- habitat: dominating habitat, whether it is algal production or bacterial decomposition of organic matter. Algal patches innoculated with Chlamydomonas (so I'm guessing coded as C?), and bacterial patches had degraded wheat (D?)
+- age: time since disturbance
+
+
+
+```{r fig.height=12, fig.width=12}
+resetarits_data %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(landscape~type, switch = "y")+
+  geom_point(size = 4) +
+  scale_colour_grey() +
+  theme_bw()
+  
+
+```
+
+The variables with `_density` are the ones we need to use for hmsc. They have very similar values to the others, which I am guessing is just raw abundance. However, the volume does change for a few of them, so density is the way to go here. 
+
+*Now, check the PCNMs that Emlyn had run before. She has no code associated to how she got them, or it was outdated with deprecated functions. So, I'm exploring the data but eventually will have to run our own.*
+
+```{r}
+ctrl.MEMs <- readRDS(here::here("nov_2019","sig_ctrl_MEMs.RDS"))
+heatmap(as.matrix(ctrl.MEMs))
+```
+
+
