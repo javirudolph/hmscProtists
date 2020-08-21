@@ -8,7 +8,7 @@ library(maptools)
 library(vegan)
 library(dplyr)
 
-# This is my resource:
+# This is my resource, up to section 5.
 # https://cran.r-project.org/web/packages/adespatial/vignettes/tutorial.html
 
 
@@ -52,25 +52,36 @@ weight.mat<-spdep::listw2mat(neighb2.lw)
 # return Euclidean distances for the coordinates based on the spatial neighborhood
 grid.thresh.d1 <- nbdists(nb1, coords)
 
+# Spatial weights are defines as a function of distance
+fdist <- lapply(grid.thresh.d1, function(x) 1-x/max(dist(coords)))
 
-grid.inv.dist <- lapply(grid.thresh.d1, function(x) 1-x/max(dist(coords)))#item 9.3.2 from Bivand's book:
-grid.invdist.lw <- nb2listw(nb1, glist=grid.inv.dist, style="B")
+# This is the spatial weighting matrix
+grid.invdist.lw <- nb2listw(nb1, glist = fdist, style="B")
 print(listw2mat(grid.invdist.lw)[1:6,1:6], digits=2)
+
+# Worried that we are taking these euclidean distances and coordinates and such, as real distances, but they are based on a sampling scheme, not actual distances?
+
+# MEMs ----
 
 # THIS is the function or step that is creating the MEM based on the distance matrices that come from the spdep::listw objects.
 grid.invdist.MEM <- scores.listw(grid.invdist.lw, store.listw = TRUE)
+# could also use mem()
+grid.invdist.MEM <- mem(grid.invdist.lw, store.listw = TRUE)
 
+grid.invdist.MEM
 summary(grid.invdist.MEM)
 attr(grid.invdist.MEM, which = "value")
-barplot(attr(grid.invdist.MEM, which = "value"), main="Barplot of MEM eigenvalues")
+barplot(attr(grid.invdist.MEM, which = "value"), main="Eigenvalues of the spatial weighting matrix")
 
+s.value(coords, grid.invdist.MEM[, c(1,3,7,10)])
 
-# grid.MEM.Moran <- test.scores(grid.invdist.MEM, grid.invdist.lw, 999)
-# The function `test.scores()` is deprecated now. To get significance try using:
+# Compute moran's I
 grid.MEM.Moran <- moran.randtest(grid.invdist.MEM, listw = grid.invdist.lw, nrepet = 999)
+grid.MEM.Moran
+
+head(attr(grid.invdist.MEM, "values") / grid.MEM.Moran$obs)
 
 # Which MEMs are significant?
-
 
 which(grid.MEM.Moran$pvalue <= 0.05) # MEM with significant spatial correlation
 length(which(grid.MEM.Moran$pvalue <= 0.05))
@@ -83,51 +94,7 @@ sig.MEM <- grid.invdist.MEM[, c(which(grid.MEM.Moran$pvalue <= 0.05))]
 # Now, choose the ones with positive eigenvalues
 attr(sig.MEM, which = "values") # Seems like they are all positive
 
-# grid.invdist.MEM.vec <- grid.invdist.MEM$vectors
-#
-# MEM.Moran.pos <- which(grid.MEM.Moran[,1] > -1/(nrow(grid.invdist.MEM$vectors)-1))
-# grid.invdist.MEM.pos <- grid.invdist.MEM.vec[,MEM.Moran.pos]
-#
-# MEM.Moran.pos.sig <- MEM.Moran.pos[which(grid.MEM.Moran[MEM.Moran.pos,2] <= 0.05)]
-#
-# grid.invdist.MEM.pos.sig <- grid.invdist.MEM.vec[,MEM.Moran.pos.sig]
-
 grid.invdist.MEM.pos.sig <- sig.MEM
 
-# Save these as an RDS for future HMSC work
-saveRDS(grid.invdist.MEM.pos.sig, "sig_ctrl_MEMs.RDS")
-
-head(protists_corrected)
-
-
-#loop time
-results.DF = c("meta", "env_comp", "combo", "spat_comp", "residuals")
-
-for(i in 1:10){
-
-
-  protists=subset(protists_corrected, landscape == i)
-  head(protists)
-  mite=protists[14:18] #community data
-  mite.env=protists[5] #habitat data, no didinium/mite.d data
-
-  # Standarization of the data
-  mite.h <- decostand(mite, "hellinger")
-
-
-  (mite.varpart <- varpart(mite.h, mite.env, grid.invdist.MEM.pos.sig))
-  part <- mite.varpart[[1]]
-  ind.fract <- part[[3]]
-  adjusted <- ind.fract[,3]
-  newrow = c(i, adjusted)
-
-  results.DF = rbind(results.DF,newrow)
-  i=i+1
-}
-
-results.DF <- data.frame(results.DF)
-colnames(results.DF) <- unlist(results.DF[1,])
-View(results.DF)
-
-write.table(results.DF, "dispersal_varpart.txt", sep="\t")
+# Those are the significant MEMs for the control metacommunities, the ones with no removals
 
