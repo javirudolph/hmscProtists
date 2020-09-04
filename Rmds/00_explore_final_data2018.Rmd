@@ -1,26 +1,42 @@
 ---
 title: "Exploring Resetarits&al2018FinalData.txt"
-output: github_document
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Introduction
+
+This project is motivated by two studies:  In Resetarits et al. 2018, we conducted a metacommunity experiment with protists in microcosms to test the idea of “keystone communities” (Mouquet et al. 2013). They keystone community concept posits that there may be certain communities or patches that have a disproportionate effect on the metacommunity. We did not find evidence for keystone communities but we did find that different particular arrangements of patches (distinct landscapes) had large effects on the results of variation partitioning analysis (Cottenie 2005, Peres-Neto et al. 2006).  This was somewhat surprising since the landscapes were identical in many other respects (e.g. number of patches, distribution of environmental values, and actual connectivity network) and involved the same set of species. Part of this variation was explained by spatial autocorrelation in environmental conditions between neighboring communities.
+
+Therefore, we conjecture that this result depends on the sensitivity of patches to the particular identities of neighboring patches, especially whether these patches were similar or different in environmental values.  We also conjectured that substantial residual variation should be structured by species interactions (rather than being purely stochastic) and that the interaction effects should be similar (in pattern even though they should vary in average magnitude) across landscapes and replicates.
+
+Ovaskainen et al. (2017) propose that metacommunity data could be better analyzed by a joint species distribution approach (jSDM) approach than by variation partitioning (Peres-Neto et al. 2006) and provide a particular package to do this called HMSC (hierarchical modeling of species communities).  This allows one to understand the contribution of individual species on the overall pattern of variation in terms of environmental influence, spatial effects, interactions with other species and uses the mean value across species to calculate an overall effect.  In this case, the overall environmental and spatial effects are akin (though technically distinct) from the effects identified in variation partitioning, but in addition there is the determination of an ‘interaction’ effect that describes residual covariation among species.  In more recent work (Leibold et al. manuscript), we propose using HMSC to analyze variation within metacommunities and outline an approach that can compare these patterns across metacommunities.  To do this we modified HMSC to improve interpretation of variation components and we implemented a variant that allows one to study the separate contributions of individual patches to the overall metacommunity structure.  Other studies have also studied and justified HMSC in terms of metacommunity analysis (Norberg et al. 2019, Rybicki et al. 2018).
+
+# Data
+
+
 This is the final data file that was given to me by Emlyn, but there is no metadata associated to any of the files provided, thus trying here to have a clear picture of how they are organized and the kind of data they have.
 
-```{r message=FALSE}
+```{r echo = FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(cowplot)
 ```
 
 
 ```{r}
-resetarits_data <- read.table(here::here("nov_2019", "Resetarits&al2018FinalData.txt"))
+resetarits_data <- read.table(here::here("data", "Resetarits&al2018FinalData.txt"))
 head(resetarits_data)
 ```
 
+The variables with `_density` are the ones we need to use for hmsc. They have very similar values to the others, which I am guessing is just raw abundance. However, the volume does change for a few of them, so density is the way to go here.
+ 
 ```{r}
 names(resetarits_data)
 ```
@@ -31,38 +47,286 @@ names(resetarits_data)
 - type: the type of removal happening. Type E is the control (no removals), A and B are low connectivity, C and D are high connectivity removals.
 - sample: each individual "patch" within the metacommunity. With control metacommunities having 36 samples, and treatment metacommunities having 35
 - x.value/y.value: location of the sample in the 36 by 36 grid
-- habitat: dominating habitat, whether it is algal production or bacterial decomposition of organic matter. Algal patches innoculated with Chlamydomonas (so I'm guessing coded as C?), and bacterial patches had degraded wheat (D?)
+- habitat: dominating habitat, whether it is algal production or bacterial decomposition of organic matter. Algal patches innoculated with Chlamydomonas (so I'm guessing coded as C?), and bacterial patches had degraded wheat (D?). I've compared to the paper, this makes sense.
 - age: time since disturbance
 
-
+**Visual representation of the data**. Here I am only showing how the patches are arranged and what habitat they have. I am not showing the dispersal between patches.
 
 ```{r fig.height=12, fig.width=12}
-resetarits_data %>% 
+
+resetarits_data %>%
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
   ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
   facet_grid(landscape~type, switch = "y")+
   geom_point(size = 4) +
-  scale_colour_grey() +
-  theme_bw()
+  scale_color_manual(values = c("#a6de52", "#b652de"), ) +
+  labs(title = "Visual representation of the data",
+       x = "Metacommunity - control or removal experiment",
+       y = "Landscape - arrangement of habitat patches") +
+  guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() +
+  theme(axis.text = element_blank())
   
 
 ```
 
-The variables with `_density` are the ones we need to use for hmsc. They have very similar values to the others, which I am guessing is just raw abundance. However, the volume does change for a few of them, so density is the way to go here. 
 
-*Now, check the PCNMs that Emlyn had run before. She has no code associated to how she got them, or it was outdated with deprecated functions. So, I'm exploring the data but eventually will have to run our own.*
+# Spatial structure  
 
-I just really don't even understand what these MEMs are supposed to look.
+In the case of the control metacommunities, where no removals have happened, we have 36 patches connected through dispersal in a dendritic structure as shown in the figure below.  
 
-```{r}
-ctrl.MEMs <- readRDS(here::here("nov_2019","sig_ctrl_MEMs.RDS"))
+```{r echo=FALSE}
+resetarits_data %>%
+  filter(type == "E", landscape == 1) %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(type~landscape, switch = "y")+
+  geom_segment(aes(x = 1, xend = 1, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 2, xend = 2, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 3, xend = 3, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 6, xend = 6, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 1, xend = 6, y = 3, yend = 3), color = "black") +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de")) +
+  scale_x_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  scale_y_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  labs(title = "Control metacommunity",
+       x = "x position",
+       y = "y postition") +
+  guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() -> control_metaco
 
-ctrl.MEMs %>% 
-  pivot_longer(., cols = starts_with("MEM"), names_to = "MEM") %>% 
-  mutate(MEM = factor(MEM, levels = unique(MEM))) %>% 
-  ggplot(., aes(x = value)) +
-  geom_histogram() +
-  facet_wrap(~MEM, nrow = 2)
+resetarits_data %>%
+  filter(type == "A", landscape == 1) %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(type~landscape, switch = "y")+
+  geom_segment(aes(x = 1, xend = 1, y = 1, yend = 5), color = "black") +
+  geom_segment(aes(x = 2, xend = 2, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 3, xend = 3, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 6, xend = 6, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 1, xend = 6, y = 3, yend = 3), color = "black") +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de"), guide = "none") +
+  scale_x_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  scale_y_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  labs(title = "Low/rare patch removal",
+       x = "x position",
+       y = "y postition") +
+  #guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() -> lo.rare
+
+resetarits_data %>%
+  filter(type == "B", landscape == 1) %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(type~landscape, switch = "y")+
+  geom_segment(aes(x = 1, xend = 1, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 2, xend = 2, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 3, xend = 3, y = 2, yend = 6), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 6, xend = 6, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 1, xend = 6, y = 3, yend = 3), color = "black") +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de"), guide = "none") +
+  scale_x_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  scale_y_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  labs(title = "Low/common patch removal metacommunity",
+       x = "x position",
+       y = "y postition") +
+  #guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() -> lo.common
+
+resetarits_data %>%
+  filter(type == "C", landscape == 1) %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(type~landscape, switch = "y")+
+  geom_segment(aes(x = 1, xend = 1, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 2, xend = 2, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 3, xend = 3, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 1, yend = 2), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 4, yend = 6), color = "black") +
+  geom_segment(aes(x = 6, xend = 6, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 1, xend = 4, y = 3, yend = 3), color = "black") +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de"), guide = "none") +
+  scale_x_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  scale_y_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  labs(title = "High/common patch removal metacommunity",
+       x = "x position",
+       y = "y postition") +
+  #guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() -> hi.common
+
+
+resetarits_data %>%
+  filter(type == "D", landscape == 1) %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(type~landscape, switch = "y")+
+  geom_segment(aes(x = 1, xend = 1, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 2, xend = 2, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 3, xend = 3, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 1, yend = 2), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 4, yend = 6), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 6, xend = 6, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 1, xend = 3, y = 3, yend = 3), color = "black") +
+  geom_segment(aes(x = 5, xend = 6, y = 3, yend = 3), color = "black") +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de"), guide = "none") +
+  scale_x_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  scale_y_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  labs(title = "High/rare patch metacommunity",
+       x = "x position",
+       y = "y postition") +
+  #guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() -> hi.rare
+
 
 ```
 
+```{r}
+control_metaco
+```
+
+The same applies for treatments in which a low connectivity patch is removed, and the dendritic network includes 35 patches. However, in treatments where a high connectivity patch was removed, the network is broken and we end up with several smaller segments of connected patches.
+
+```{r}
+plot_grid(lo.common, lo.rare,
+          hi.common, hi.rare, 
+          ncol = 2, nrow = 2)
+```
+
+ How can we use MEMs to describe this spatial structure, in particular the ones where we remove high connectivity patches and end up with multiple fragments of the metacommunity? 
+
+In the past, an artificial matrix of coordinates was created with a certain threshold to describe this dispersal structure for the control metacommunities by creating the spatial neighborhood with this threshold.
+
+
+```{r echo=FALSE, message=FALSE}
+library(ade4)
+library(adespatial)
+library(adegraphics)
+library(spdep)
+library(maptools)
+library(vegan)
+```
+
+
+```{r}
+x <- c(1,1,1,1,1,1,
+       2,2,2,1.999,2,2,
+       3,3,3,2.998,3,3,
+       4,4,4,3.997,4,4,
+       5,5,5,4.996,5,5,
+       6,6,6,5.995,6,6)
+y <- c(5.996,4.997,3.998,2.999,2,1.001,
+       5.996,4.997,3.998,2.999,2,1.001,
+       5.996,4.997,3.998,2.999,2,1.001,
+       5.996,4.997,3.998,2.999,2,1.001,
+       5.996,4.997,3.998,2.999,2,1.001,
+       5.996,4.997,3.998,2.999,2,1.001)
+
+coords <- coordinates(cbind(x,y))
+plot(coords)
+```
+
+```{r}
+# Build spatial neighborhood and using 0.9995 as the threshold
+nb1 <- spdep::dnearneigh(coords, 0, 0.9995, longlat=F)
+adegraphics::s.label(coords, nb = nb1)
+
+# Define spatial weighing matrices
+neighb2.lw <- spdep::nb2listw(nb1, style="B")
+# Now as a matrix of 1/0
+weight.mat<-spdep::listw2mat(neighb2.lw)
+
+# return Euclidean distances for the coordinates based on the spatial neighborhood
+grid.thresh.d1 <- nbdists(nb1, coords)
+
+# Spatial weights are defines as a function of distance
+fdist <- lapply(grid.thresh.d1, function(x) 1-x/max(dist(coords)))
+
+# This is the spatial weighting matrix
+grid.invdist.lw <- nb2listw(nb1, glist = fdist, style="B")
+print(listw2mat(grid.invdist.lw)[1:6,1:6], digits=2)
+```
+
+```{r}
+# Worried that we are taking these euclidean distances and coordinates and such, as real distances, but they are based on a sampling scheme, not actual distances?
+
+# MEMs ----
+
+# THIS is the function or step that is creating the MEM based on the distance matrices that come from the spdep::listw objects.
+grid.invdist.MEM <- scores.listw(grid.invdist.lw, store.listw = TRUE)
+# could also use mem()
+grid.invdist.MEM <- mem(grid.invdist.lw, store.listw = TRUE)
+
+grid.invdist.MEM
+summary(grid.invdist.MEM)
+attr(grid.invdist.MEM, which = "value")
+barplot(attr(grid.invdist.MEM, which = "value"), main="Eigenvalues of the spatial weighting matrix")
+
+s.value(coords, grid.invdist.MEM[, c(1,3,7,10)])
+
+# Compute moran's I
+grid.MEM.Moran <- moran.randtest(grid.invdist.MEM, listw = grid.invdist.lw, nrepet = 999)
+grid.MEM.Moran
+
+head(attr(grid.invdist.MEM, "values") / grid.MEM.Moran$obs)
+
+# Which MEMs are significant?
+
+which(grid.MEM.Moran$pvalue <= 0.05) # MEM with significant spatial correlation
+length(which(grid.MEM.Moran$pvalue <= 0.05))
+
+# Now, we want to select those significant ones but only keep the eigenvectors that have positive eigenvalues.
+
+# These are the significant MEMs
+sig.MEM <- grid.invdist.MEM[, c(which(grid.MEM.Moran$pvalue <= 0.05))]
+
+# Now, choose the ones with positive eigenvalues
+attr(sig.MEM, which = "values") # Seems like they are all positive
+
+grid.invdist.MEM.pos.sig <- sig.MEM
+
+# Those are the significant MEMs for the control metacommunities
+```
 
