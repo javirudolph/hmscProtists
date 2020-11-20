@@ -1,0 +1,64 @@
+---
+title: "Javi's take at MEMs"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+```
+
+
+```{r}
+resetarits_data <- read.table(here::here("data", "Resetarits&al2018FinalData.txt"))
+head(resetarits_data)
+```
+
+**Visual representation of the data**. Here I am only showing how the patches are arranged and what habitat they have. I am not showing the dispersal between patches.
+
+```{r fig.height=2.5, fig.width=8}
+
+resetarits_data %>%
+  filter(., landscape == "1") %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_grid(landscape~type, switch = "y")+
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de"), ) +
+  labs(title = "Visual representation of the data",
+       x = "Metacommunity - control or removal experiment",
+       y = "Landscape - arrangement of habitat patches") +
+  guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw() +
+  #theme(axis.text = element_blank()) +
+  NULL
+
+```
+
+Focusing only on the first landscape:
+
+```{r}
+# Build the 36x36 connections matrix:
+
+resetarits_data %>% 
+  filter(., landscape == "1") %>% 
+  dplyr::select(., landscape, meta, x.value, y.value)
+  
+
+
+```
+
+

@@ -4,11 +4,11 @@ library(HMSC)
 #library(doParallel)
 
 # Significant MEMs are saved as an RDS file within this directory as:
-ctrl.MEMs <- readRDS("nov_2019/sig_ctrl_MEMs.RDS")
+ctrl.MEMs <- readRDS("old_tests/sig_ctrl_MEMs.RDS")
 
 
 # Read the data
-final.data <- read.table("nov_2019/Resetarits&al2018FinalData.txt")
+final.data <- read.table("old_tests/Resetarits&al2018FinalData.txt")
 
 # Subset the data to:
 #   - The control of just 1 landscape
@@ -35,7 +35,7 @@ protist_hmsc <- as.HMSCdata(Y = prot.occp, X = cbind(prot.env[,2:3], ctrl.MEMs),
 
 # Protist model
 
-protist_model <- hmsc(protist_hmsc, family = "probit", niter = 50000, nburn = 10000, thin = 15)
+protist_model <- hmsc(protist_hmsc, family = "probit", niter = 5000, nburn = 1000, thin = 15)
 
 # Check convergence
 protist_model$results$estimation$paramX
