@@ -48,6 +48,27 @@ Here we use this method to study the dynamics of community assembly and link it 
 
 Papers:
 
+Spatial structure has strong implications for diversity patterns, where constraints associated to dendritic structures, such as riverine networks, show more variation in local diversity and highlight the importance of headwaters to maintain regional diversity (Carrara et al. 2012).  
+
+Exploring the effects of local communities on regional processes by single-patch removal experiments, showing that these local removals cause metacommunities to be assembled more by spatial effects related to stochasticity (Resetarits, Cathey, and Leibold 2018).  
+
+Characterizing a keystone community using protist microcosms, show keystone communities as those with unique environments supporting endemic species, when removed had significant effect on regional diversity, ecosystem functions (Yang et al. 2020).  
+
+Defining keystone communities as those that have disproportionate effects on overall metacommunity structure and functioning, helping to understand species interactions within communities, with potential applications in conservation and management  (Mouquet et al. 2013).  
+
+The importance in small habitat patches. Area reductions in small habitat patches caused species removal in >80% of metacommunities, showing that changes in small habitat patches have significant consequences over species extinctions across metacommunities (Deane and He 2018).  
+
+Species interactions have an important role in structuring microbial communities. Fungal communities from molecular data, examining co-occurrence using a joint species distribution approach to separate co-occurrences explained by environment, the host, and those unexplained, which they say “probably reflect interactive associations” (Abrego et al. 2020).  
+
+Microcosms and evidence on the importance of small patches generating higher diversity (Hammill and Clements 2020).  
+
+Metacommunity research using intermittent rivers as a highly variable system, incorporating temporal dynamics and the effects of wet and dry phases of riverine communities (Datry, Bonada, and Heino 2016).  
+
+Experimental metacommunities with varying salinity levels, where freshwater habitat patches (mesocosms) show disproportionate effects on biodiversity at local and regional scales. These freshwater low salinity patches supported more species capable of dispersing to neighboring communities, unlike high-salinity patches hosting halophilic species only. (Mausbach and Dzialowski 2020)  
+
+
+
+
 # Introduction 
 
 
