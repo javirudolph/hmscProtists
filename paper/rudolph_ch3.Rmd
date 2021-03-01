@@ -3,7 +3,7 @@ title: "Title for third chapter"
 abstract: |
   This should be the abstract
 output:
-    word_document:
+  word_document:
     reference_docx: protists_ref.docx
   html_document:
     df_print: paged
@@ -19,9 +19,38 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE)
 
 
 \newpage
-# Introduction
+# Draft 
 
-#
+What is the general question and issue?
+There are at least two schools of thought that have addressed the distribution of species in landscapes; metacommunity ecology and landscape ecology.  The two overlap in their goals but differ in important conceptual ways and in their approach.   More here….
+A number of attempts have been made to reconcile them or to leverage insights from one to the other.  More here with a review of some important papers, especially recent one.  (see Fournier et al. , especially Figure 5).
+Nevertheless there remains many challenges.  One of these is that both approaches have generally looked at emergent landscape-level drivers and descriptors of patterns and paid less attention to the ‘internal structure’ of the distributions.   … describe what we mean by the internal structure… the study of the variation among species and/or among sites in how they participate in the community assembly processes that determine patterns in a metacommunity.  
+The internal structure is key to understanding how species differ in how they respond to drivers of community assembly (abiotic selection, biotic interactions/selection, stochastic processes that determine ‘drift’, and dispersal – we ignore speciation and other aspects of intraspecific evolution)… more here (I gotta think about this a bit more)
+At the landscape level (emergent patterns but not study of internal structure), previous work has shown that: (more here…).
+Recent developments in the statistical modeling of distributions, however, provides tools that can elucidate this internal structure.  This includes JSDMs that are primarily built to study the distribution of species (Ovaskainen et al. 2017, other refs) but can be modified to similarly study the occupancy of sites.  This two dimensional approach can link internal structure to landscape level metrics (Leibold et al. 2020).
+Here we use this method to study the dynamics of community assembly and link it to landscape level metrics in a replicated metacommunity experiment with well understood dynamics of protists in microcosms.   Previous analyses of this experiment using landscape level metrics found that landscape attributes involving the particulars of landscape arrangement of patches had strong effects on metacommunity metrics and that direct manipulations of local sites had much smaller effects.  We ask: can we explain this variability of outcomes by resolving variation in the internal structure of the metacommunities can relate landscape arrangement to variation in the roles of selection, interaction, dispersal, and drift on different species or in different sites?
+
+1.	Previous research found that landscape configuration had large effects on the results of variation partitioning but the reasons are unclear.  Details matter but which ones?
+2.	We have quasi-replicate metacommunities.  The variation among landscapes is larger than the variation within these landscapes even though the within-landscape pseudo-replicates differ (by having one patch removed)
+3.	Can we identify the causes of this variation by the study of the ‘internal structure’?  Are there particular species (and traits) or sites (and spatial arrangement features) that drive this variation?Test which species or sites are driving this variation
+4.	Identify which species and sites are contributing more to each of the three variation partitioning components
+5.	Focus on the biology and the underlying questions. The method is a suggestion, but we are not validating a method or anything like that.
+6.	Resetarits wanted to explore the effect of local patches on regional processes. Example, is the spatial arrangement of local patches, this is how explores the keystone community concept. Considering that some patches may have disproportionate effects over regional processes, or in this case, over the metacommunity. 
+7.	The metacommunity concept is an approach to studying the interaction of regional and local processes, and using this interaction to explain community assembly. 
+8.	From the experiment, the fact that landscape, arrangement of the patches, had large effects on the variation partitioning. Part of the variation partitioning was explained by the spatial autocorrelation in environmental conditions between neighboring communities. We think this depends on the sensitivity of patches to their neighbors, and the environmental conditions of their neihgbors (similar vs different).
+9.	The experiment didn’t consider species interactions, and we think that part of the variation observed, can probabliy be structured by species interactions, with similar effects across the landscapes and replicates. [In addition there are few studies that look at consistency of the co-distribution component and we can ask if these interactions are consistent across the metacommunities – in theory they should be].  We can also see if this is true for the actual network of co-distributions (i.e. details of the matrix) or for statistical properties of the matrix (i.e. means and variances of the co-distributions – like we are studying in the work with M. Barbier).
+10.	For the controls, we have 10 landscapes, each with 36 patches. We also have censuses for them, 9-10 done weekly. This one seems more straight forward to apply hmsc.  Actually this is fairly novel since there are few studies of hmsc (and jsdms) through time.  We can ask questions like:
+10.1.	Does the overall pattern stabilize through time and how long does it take if it does? In other experiments it did when evaluated by variation partitioning (see Fukumori et al.)
+10.2.	Do the apparent interactions change with time?  They shouldn’t if they are unbiased…
+10.10.3.	?? (probably many other things we can ask – see Chapter 10 in Ovaskainen and Abrego 2020 book)
+11.	Using the treatments with low connectivity, meaning the removal of a peripheral patch. These are still a fully connected metacommunity. Using these also seems straight-forward. 
+12.	Patches that share environment with their neighbors will contribute more to the environmental fraction in the variation partitioning
+
+Papers:
+
+# Introduction 
+
+
 # References
 
 
