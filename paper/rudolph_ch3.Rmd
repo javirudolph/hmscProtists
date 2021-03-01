@@ -23,11 +23,15 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE)
 
 What is the general question and issue?
 There are at least two schools of thought that have addressed the distribution of species in landscapes; metacommunity ecology and landscape ecology.  The two overlap in their goals but differ in important conceptual ways and in their approach.   More here….
-A number of attempts have been made to reconcile them or to leverage insights from one to the other.  More here with a review of some important papers, especially recent one.  (see Fournier et al. , especially Figure 5).
+A number of attempts have been made to reconcile them or to leverage insights from one to the other.  More here with a review of some important papers, especially recent one.  (see Fournier et al. , especially Figure 5).  
+
 Nevertheless there remains many challenges.  One of these is that both approaches have generally looked at emergent landscape-level drivers and descriptors of patterns and paid less attention to the ‘internal structure’ of the distributions.   … describe what we mean by the internal structure… the study of the variation among species and/or among sites in how they participate in the community assembly processes that determine patterns in a metacommunity.  
-The internal structure is key to understanding how species differ in how they respond to drivers of community assembly (abiotic selection, biotic interactions/selection, stochastic processes that determine ‘drift’, and dispersal – we ignore speciation and other aspects of intraspecific evolution)… more here (I gotta think about this a bit more)
+
+The internal structure is key to understanding how species differ in how they respond to drivers of community assembly (abiotic selection, biotic interactions/selection, stochastic processes that determine ‘drift’, and dispersal – we ignore speciation and other aspects of intraspecific evolution)… more here (I gotta think about this a bit more) 
+
 At the landscape level (emergent patterns but not study of internal structure), previous work has shown that: (more here…).
-Recent developments in the statistical modeling of distributions, however, provides tools that can elucidate this internal structure.  This includes JSDMs that are primarily built to study the distribution of species (Ovaskainen et al. 2017, other refs) but can be modified to similarly study the occupancy of sites.  This two dimensional approach can link internal structure to landscape level metrics (Leibold et al. 2020).
+Recent developments in the statistical modeling of distributions, however, provides tools that can elucidate this internal structure.  This includes JSDMs that are primarily built to study the distribution of species (Ovaskainen et al. 2017, other refs) but can be modified to similarly study the occupancy of sites.  This two dimensional approach can link internal structure to landscape level metrics (Leibold et al. 2020).  
+
 Here we use this method to study the dynamics of community assembly and link it to landscape level metrics in a replicated metacommunity experiment with well understood dynamics of protists in microcosms.   Previous analyses of this experiment using landscape level metrics found that landscape attributes involving the particulars of landscape arrangement of patches had strong effects on metacommunity metrics and that direct manipulations of local sites had much smaller effects.  We ask: can we explain this variability of outcomes by resolving variation in the internal structure of the metacommunities can relate landscape arrangement to variation in the roles of selection, interaction, dispersal, and drift on different species or in different sites?
 
 1.	Previous research found that landscape configuration had large effects on the results of variation partitioning but the reasons are unclear.  Details matter but which ones?
@@ -70,6 +74,13 @@ Experimental metacommunities with varying salinity levels, where freshwater habi
 
 
 # Introduction 
+
+Here we use this method to study the dynamics of community assembly and link it to landscape level metrics in a replicated metacommunity experiment with well understood dynamics of protists in microcosms.   Previous analyses of this experiment using landscape level metrics found that landscape attributes involving the particulars of landscape arrangement of patches had strong effects on metacommunity metrics and that direct manipulations of local sites had much smaller effects.  We ask: can we explain this variability of outcomes by resolving variation in the internal structure of the metacommunities can relate landscape arrangement to variation in the roles of selection, interaction, dispersal, and drift on different species or in different sites?  
+
+
+# Methods 
+## Spatial structure of the landscapes  
+Using MEMs, weighted matrix. 
 
 
 # References
