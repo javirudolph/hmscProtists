@@ -74,5 +74,5 @@ attr(sig.MEM, which = "values") # Seems like they are all positive
 # These are the significant MEMs for the control metacommunities
 ctrl.mem <- sig.MEM
 
-save(ctrl.mem, file = "paper/ctrl_mem.RDS")
+saveRDS(ctrl.mem, file = "paper/ctrl_mem.RDS")
 
