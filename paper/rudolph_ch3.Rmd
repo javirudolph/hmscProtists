@@ -75,6 +75,8 @@ Experimental metacommunities with varying salinity levels, where freshwater habi
 
 # Introduction 
 
+Description of what these species distributions models are and what we are trying to do. [@poggiato2021interpretations]
+
 Here we use this method to study the dynamics of community assembly and link it to landscape level metrics in a replicated metacommunity experiment with well understood dynamics of protists in microcosms.   Previous analyses of this experiment using landscape level metrics found that landscape attributes involving the particulars of landscape arrangement of patches had strong effects on metacommunity metrics and that direct manipulations of local sites had much smaller effects.  We ask: can we explain this variability of outcomes by resolving variation in the internal structure of the metacommunities can relate landscape arrangement to variation in the roles of selection, interaction, dispersal, and drift on different species or in different sites?  
 
 
