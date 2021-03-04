@@ -75,10 +75,13 @@ Experimental metacommunities with varying salinity levels, where freshwater habi
 
 # Introduction 
 
-Description of what these species distributions models are and what we are trying to do. [@poggiato2021interpretations]
+Description of what these species distributions models are and what we are trying to do. Joint species distribution models (JSDMs) are an extension species distribution models (SDMs) where they consider correlations among species. All these distribution models are trying to predict distributions of species across space and time. SDMs capture the realized niche by analizying the combined effect of abiotic and biotic environments. JSDMs infer a correlation matrix from the residuals which reflect the patterns of species co-occurrence that are not explained by the environmental variables included in the model, however these correlations can also arise from model mispecifications or missing variables.There is an ongoing debate on whether or not the residual correlation matrix can provide information on biological interactions.Common responses to unmeasured environmental variables could result in positive correlations in the matrix, even if species don't actually interact. Also, capturing marginal correlations, so you can't take apart the indirect and direct associations between species. Instead, we should use the residual correlation to provide conditional predictions on species presence or absence given the presence of other species. [@poggiato2021interpretations]
+
+## From youtube Hmsc videos
+Prevailing theories in community ecology: assembly rules framework, metacommunity theory, Vellend's theory of ecological communities. 
+HMSC is most related to the assembly rules framework, but can be related to the other two. More than assembly rules, the term used now are assembly processes. 
 
 Here we use this method to study the dynamics of community assembly and link it to landscape level metrics in a replicated metacommunity experiment with well understood dynamics of protists in microcosms.   Previous analyses of this experiment using landscape level metrics found that landscape attributes involving the particulars of landscape arrangement of patches had strong effects on metacommunity metrics and that direct manipulations of local sites had much smaller effects.  We ask: can we explain this variability of outcomes by resolving variation in the internal structure of the metacommunities can relate landscape arrangement to variation in the roles of selection, interaction, dispersal, and drift on different species or in different sites?  
-
 
 # Methods 
 ## Spatial structure of the landscapes  
