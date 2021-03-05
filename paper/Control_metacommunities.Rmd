@@ -1,6 +1,8 @@
 ---
 title: "Test Run Control Metacommunities"
-output: html_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -21,12 +23,21 @@ library(ggtern)
 library(corrplot)
 
 library(HMSC)
+library(coda)
 ```
 
 ```{r}
 # Load data 
 resetarits_data <- read.table(here::here("data", "Resetarits&al2018FinalData.txt"))
 head(resetarits_data)
+
+resetarits_data %>%
+  dplyr::filter(., type == "E") %>%
+  dplyr::select(., landscape, ends_with("_density")) -> ctrl_density
+
+resetarits_data %>%
+  dplyr::filter(., type == "E") %>%
+  dplyr::select(., landscape, habitat.bi, age) -> ctrl_env
 
 ctrl_mem <- readRDS("paper/ctrl_mem.RDS")
 ```
@@ -145,17 +156,17 @@ format_spp <- function(data){
 }
 
 format_sites <- function(data){
-  data %>% 
+  
     nspp <- 7
-    c <- rowSums(vpsite$overlap1[,,1])/nspp
-    b <- rowSums(vpsite$overlap1[,,2])/nspp
-    a <- rowSums(vpsite$overlap1[,,3])/nspp
+    c <- rowSums(data$overlap1[,,1])/nspp
+    b <- rowSums(data$overlap1[,,2])/nspp
+    a <- rowSums(data$overlap1[,,3])/nspp
 
-    e <- rowSums(vpsite$overlap2[,,1])/nspp
-    f <- rowSums(vpsite$overlap2[,,2])/nspp
-    d <- rowSums(vpsite$overlap2[,,3])/nspp
+    e <- rowSums(data$overlap2[,,1])/nspp
+    f <- rowSums(data$overlap2[,,2])/nspp
+    d <- rowSums(data$overlap2[,,3])/nspp
 
-    g <- rowSums(vpsite$overlap3)/nspp
+    g <- rowSums(data$overlap3)/nspp
 
     env <- a + f + 1/2 * d + 1/2 * g
     env <- ifelse(env < 0, 0, env)
@@ -193,6 +204,814 @@ get_mcmc_obj <- function(model){
   result <- mcmc(data = paramMCMCMat, thin = modelThin)
 }
 
+```
+
+So, with Guillaume's HMSC version, we can only use probit as the link function to the model, which restricts this to only using presence absence data. Each set of figures corresponds to one type of landscape
+
+### Reminder of what the landscapes look like  
+
+```{r fig.height=6, fig.width=6}
+resetarits_data %>%
+  filter(type == "E") %>% 
+  mutate(type = case_when(type == "A" ~ "Low/rare removal",
+                          type == "B" ~ "Low/common removal",
+                          type == "C" ~ "High/common removal",
+                          type == "D" ~ "High/rare removal",
+                          type == "E" ~ "Control, no removal"),
+         habitat = ifelse(habitat == "C", "Algae", "Bacteria")) %>% 
+  ggplot(., aes(x = x.value, y = y.value, color = habitat)) +
+  facet_wrap(~landscape, ncol = 2) +
+  # facet_grid(landscape~type, switch = "y")+
+  geom_segment(aes(x = 1, xend = 1, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 2, xend = 2, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 3, xend = 3, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 4, xend = 4, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 5, xend = 5, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 6, xend = 6, y = 1, yend = 6), color = "black") +
+  geom_segment(aes(x = 1, xend = 6, y = 3, yend = 3), color = "black") +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#a6de52", "#b652de")) +
+  scale_x_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  scale_y_continuous(limits = c(0.5, 6.5), breaks = c(1:6), label = c(1:6)) +
+  labs(title = "Control metacommunity",
+       x = "x position",
+       y = "y postition") +
+  guides(color = guide_legend(title = "Habitat type")) +
+  theme_bw()
+```
+
+### Landscape 1
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 1
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+### Landscape 2  
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 2
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+
+### Landscape 3  
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 3
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+
+### Landscape 4
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 4
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+### Landscape 5  
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 5
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+
+### Landscape 6  
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 6
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+### Landscape 7
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 7
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+### Landscape 8  
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 8
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+
+### Landscape 9  
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 9
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
+```
+
+### Landscape 10
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+lans_num <- 10
+
+onectrl <- ctrl_density %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape) %>%
+  as.matrix()
+
+onectrl[onectrl > 0] <- 1
+
+env_vars <- ctrl_env %>%
+  dplyr::filter(., landscape==lans_num) %>%
+  dplyr::select(., -landscape)
+
+ashmsc <- as.HMSCdata(Y = onectrl, X = cbind(env_vars, ctrl_mem),
+                      Random = as.factor(1:36),
+                      scaleX = TRUE, interceptX = TRUE)
+niter <- 3000
+nburn <- 1000
+thin <- 2
+
+m1 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+m2 <- hmsc(ashmsc, family = "probit", niter = niter, nburn = nburn, thin = thin)
+
+
+model <- list(get_mcmc_obj(m1), get_mcmc_obj(m2))
+
+# Variation Partitioning
+vpsppm1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+vpsppm2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)),
+                  type = "III", R2adjust = TRUE)
+
+vpsitem1 <- variPart(m1, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+vpsitem2 <- variPart(m2, groupX = c(rep("env",3),rep("spa",14)), indSite = TRUE,
+                  type = "III", R2adjust = TRUE)
+
+
+```
+
+```{r eval=FALSE}
+# Diagnostics
+gelman.diag(model)
+gelman.plot(model)
+traceplot(model)
+```
+
+
+```{r}
+# Format the data and plot
+
+sppdat <- format_spp(vpsppm1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_rows(format_spp(vpsppm2) %>% 
+              mutate(chain = "c2"))
+
+species_plot(sppdat, plotMain = paste("Landscape", lans_num), colorVar = "chain", colorLegend = "Chain")
+
+sitedat <- format_sites(vpsitem1) %>% 
+  mutate(chain = "c1") %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(format_sites(vpsitem2) %>% 
+              mutate(chain = "c2") %>%
+              bind_cols(env_vars))
+
+sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
+
+
+par(mfrow = c(1,2))
+interaction_plot(m1)
+interaction_plot(m2)
 ```
 
 
