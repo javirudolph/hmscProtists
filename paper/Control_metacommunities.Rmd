@@ -155,6 +155,15 @@ format_spp <- function(data){
             r2 = env + spa + codist)
 }
 
+rawfractions_species <-function(data){
+  data %>% 
+  map(as_tibble) %>%
+  bind_cols() %>%
+  rownames_to_column() %>%
+  set_names(c("species", "c", "b", "a", "e", "f", "d", "g")) %>% 
+    dplyr::select(species, a, b, c, d, e, f, g)
+}
+
 format_sites <- function(data){
   
     nspp <- 7
@@ -177,6 +186,24 @@ format_sites <- function(data){
     r2 <- env + spa + codist
 
     sitedata <- cbind.data.frame(env, spa, codist, r2)
+    return(sitedata)
+}
+
+rawfractions_sites <- function(data){
+  
+    nspp <- 7
+    c <- rowSums(data$overlap1[,,1])/nspp
+    b <- rowSums(data$overlap1[,,2])/nspp
+    a <- rowSums(data$overlap1[,,3])/nspp
+
+    e <- rowSums(data$overlap2[,,1])/nspp
+    f <- rowSums(data$overlap2[,,2])/nspp
+    d <- rowSums(data$overlap2[,,3])/nspp
+
+    g <- rowSums(data$overlap3)/nspp
+
+    sitedata <- cbind.data.frame(a,b,c,d,e,f,g) %>% 
+      mutate(site = 1:36)
     return(sitedata)
 }
 ```
@@ -317,6 +344,27 @@ interaction_plot(m1)
 interaction_plot(m2)
 ```
 
+```{r}
+# save data for plots later:
+
+rawvpspp <- rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))
+
+rawvpsites <- rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))
+
+```
+
 ### Landscape 2  
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
@@ -394,6 +442,28 @@ interaction_plot(m1)
 interaction_plot(m2)
 ```
 
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
+```
 
 ### Landscape 3  
 
@@ -470,6 +540,31 @@ sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
 par(mfrow = c(1,2))
 interaction_plot(m1)
 interaction_plot(m2)
+```
+
+
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
 ```
 
 
@@ -550,6 +645,30 @@ interaction_plot(m1)
 interaction_plot(m2)
 ```
 
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
+```
+
 ### Landscape 5  
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
@@ -628,6 +747,30 @@ interaction_plot(m2)
 ```
 
 
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
+```
+
 ### Landscape 6  
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
@@ -703,6 +846,30 @@ sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
 par(mfrow = c(1,2))
 interaction_plot(m1)
 interaction_plot(m2)
+```
+
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
 ```
 
 ### Landscape 7
@@ -782,6 +949,29 @@ interaction_plot(m1)
 interaction_plot(m2)
 ```
 
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
+```
 ### Landscape 8  
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
@@ -860,6 +1050,30 @@ interaction_plot(m2)
 ```
 
 
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
+```
+
 ### Landscape 9  
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
@@ -935,6 +1149,29 @@ sites_plot(sitedat, colorVar = "chain", plotMain = "Sites")
 par(mfrow = c(1,2))
 interaction_plot(m1)
 interaction_plot(m2)
+```
+
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
 ```
 
 ### Landscape 10
@@ -1014,4 +1251,31 @@ interaction_plot(m1)
 interaction_plot(m2)
 ```
 
+```{r}
+# save data for plots later:
+
+bind_rows(rawvpspp,
+          rawfractions_species(vpsppm1) %>% 
+  mutate(chain = "c1",
+         landscape = lans_num) %>% 
+  bind_rows(rawfractions_species(vpsppm2) %>% 
+              mutate(chain = "c2",
+                     landscape = lans_num))) -> rawvpspp
+
+bind_rows(rawvpsites,
+rawfractions_sites(vpsitem1) %>% 
+  mutate(chain = "c1", 
+         landscape = lans_num) %>% 
+  bind_cols(env_vars) %>% 
+  bind_rows(rawfractions_sites(vpsitem2) %>% 
+              mutate(chain = "c2", 
+         landscape = lans_num) %>%
+              bind_cols(env_vars))) -> rawvpsites
+
+```
+
+```{r}
+saveRDS(rawvpspp, "raw_fractions_control_species_probit.RDS")
+saveRDS(rawvpsites, "raw_fractions_control_sites_probit.RDS")
+```
 
